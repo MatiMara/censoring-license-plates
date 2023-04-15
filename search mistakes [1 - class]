@@ -1,0 +1,12 @@
+import os
+
+files = (os.listdir("C:\\Users\\mateu\\Desktop\\bluring_plates\\reszta\\car-plates-dataset-v2\\labels"))
+
+for file in files:
+
+    with open(f"C:\\Users\\mateu\\Desktop\\bluring_plates\\reszta\\car-plates-dataset-v2\\labels\\{file}") as f:
+        lines = f.readlines()
+        for line in lines:
+            if line[0] == "1":
+                print(file)
+                print(f.read())
