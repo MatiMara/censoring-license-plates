@@ -7,7 +7,7 @@ def split_photo(img_name):
     # Wczytanie wszystkich plików z folderu "kupa"
     input_img_path = f"C:/Users/mateu/Desktop/t1/{img_name}"
     output_folder_path = "C:/Users/mateu/Desktop/t2"
-    overlap_ratio = 0.10
+    overlap_ratio = 0.15
 
     # Usuń wszystkie pliki z folderu wyjściowego przed wykonaniem skryptu
     for filename in os.listdir(output_folder_path):
