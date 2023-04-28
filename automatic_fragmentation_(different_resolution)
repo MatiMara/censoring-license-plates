@@ -3,12 +3,15 @@ from PIL import Image
 import shutil
 
 
-def split_photo(img_name):
+def split_photo(img_name, vehicles_df=None):
+    print(vehicles_df)
     # Wczytanie wszystkich plików z folderu
     # input_img_path = f"C:/Users/mateu/Desktop/t1/{img_name}"
     input_img_path = img_name
     output_folder_path = "C:/Users/mateu/Desktop/t2"
     overlap_ratio = 0.15
+    max_width = 1200
+    max_height = 800
 
     # Usuń wszystkie pliki z folderu wyjściowego przed wykonaniem skryptu
     for filename in os.listdir(output_folder_path):
@@ -27,12 +30,14 @@ def split_photo(img_name):
 
         # Sprawdzenie rozmiaru obrazu
         width, height = img.size
-        if width >= 853 and height >= 640:
-            part_width = 853
-            part_height = 640
+        if width > height:
+            width_parts_n = width // (max_width/1.3) + 1
+            height_parts_n = height // (max_height/1.3) + 1
         else:
-            part_width = 640
-            part_height = 853
+            width_parts_n = width // (max_width/1.3) + 1
+            height_parts_n = height // (max_height/1.3) + 1
+        part_width = round(width / width_parts_n)
+        part_height = round(height / height_parts_n)
 
         # Calculate the overlap distance in pixels
         overlap_width = int(part_width * overlap_ratio)
@@ -49,6 +54,15 @@ def split_photo(img_name):
                 y1 = row * part_height - overlap_height if row > 0 else row * part_height
                 x2 = (col + 1) * part_width + overlap_width if col < int(width/part_width)-1 else (col + 1) * part_width
                 y2 = (row + 1) * part_height + overlap_height if row < int(height/part_height)-1 else (row + 1) * part_height
+
+                if vehicles_df is not None:
+                    car = False
+                    # Krzyżowanie koordynat - sprawdzenie, czy na wycinku jest pojazd
+                    for index, vehicle in vehicles_df.iterrows():
+                        if (not (x1 < vehicle["xmin"] and x2 < vehicle["xmin"])) and (not (y1 < vehicle["ymin"] and y2 < vehicle["ymin"])) and (not (x1 > vehicle["xmax"] and x2 > vehicle["xmax"])) and not (y1 > vehicle["ymax"] and y2 > vehicle["ymax"]):
+                            car = True
+                    if car is not True:
+                        continue
 
                 # Wycinanie i zapisywanie fragmentu
                 part = img.crop((x1, y1, x2, y2))
