@@ -36,8 +36,8 @@ def split_photo(img_name, vehicles_df=None):
         else:
             width_parts_n = width // (max_width/1.3) + 1
             height_parts_n = height // (max_height/1.3) + 1
-        part_width = round(width / width_parts_n)
-        part_height = round(height / height_parts_n)
+        part_width = int(width // width_parts_n)
+        part_height = int(height // height_parts_n)
 
         # Calculate the overlap distance in pixels
         overlap_width = int(part_width * overlap_ratio)
