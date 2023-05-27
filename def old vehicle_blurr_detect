@@ -1,0 +1,81 @@
+def blurr_images_vehicle(license_model, vehicle_model, input_path="../test", output_path="results"):
+    images = [f"{input_path}/{f}" for f in os.listdir(input_path)]  # or file, Path, PIL, OpenCV, numpy, list
+
+    results_dir_num = 0
+    while f"exp{results_dir_num}" in os.listdir(output_path):
+        results_dir_num += 1
+    os.mkdir(f"{output_path}/exp{results_dir_num}")
+
+    start = time()
+
+    vehicle_model.conf = 0.1
+    vehicles_results = vehicle_model(images)
+    vehicles_results_ls = vehicles_results.pandas().xyxy
+    # for vehicles_results_df in vehicles_results_ls:
+    # vehicles_results_df = vehicles_results_ls[0]
+    # print(vehicles_results_df[vehicles_results_df['class'].isin([2, 3, 5, 7])])
+
+    results_after_combining = []
+    for it, im in enumerate(images):
+        result_after_combining = pandas.DataFrame(columns=["xmin", "ymin", "xmax", "ymax"])
+        vehicles_results_df = vehicles_results_ls[it]
+        veh_res_df = vehicles_results_df[vehicles_results_df['class'].isin([2, 3, 5, 7])]
+        veh_res_df = veh_res_df.reset_index()
+        split_photo(im, veh_res_df)
+        split_images = [f"C:\\Users\\mateu\\Desktop\\t2\\{f}" for f in os.listdir("C:\\Users\\mateu\\Desktop\\t2")]
+        # print(f"split_images={split_images}")
+        split_results = license_model(split_images)
+        # print(f"split_results={split_results}")
+        for i, res in enumerate(split_results.pandas().xyxy):
+            split_img_name = split_images[i].split("/")[-1]
+            # print(len(split_img_name.split("_")), split_img_name.split("_"))
+            if len(split_img_name.split("_")) > 1:
+                start_x = int(split_img_name.split("_")[-3])
+                start_y = int(split_img_name.split("_")[-2])
+                # print(f"res={res}")
+                for _, r in res[["xmin", "ymin", "xmax", "ymax"]].iterrows():
+                    # print("r before adding = ", r)
+                    r["xmin"] += start_x
+                    r["ymin"] += start_y
+                    r["xmax"] += start_x
+                    r["ymax"] += start_y
+                    # print("r = ", r)
+                    result_after_combining = result_after_combining.append(r)
+                    # print("result_after_combining = ", result_after_combining)
+            else:
+                for _, r in res[["xmin", "ymin", "xmax", "ymax"]].iterrows():
+                    # print(type(res), res)
+                    # print(type(res[["xmin", "ymin", "xmax", "ymax"]]), res[["xmin", "ymin", "xmax", "ymax"]])
+                    # print("r = ", r)
+                    result_after_combining = result_after_combining.append(r)
+                    # print("result_after_combining = ", result_after_combining)
+
+        results_after_combining.append(result_after_combining)
+        # print(im.split("/")[-1])
+        # print(result_after_combining)
+        print(f"{it+1}/{len(images)}")
+
+        # Po ilu zdjęciach przerwać
+        x = 1000
+        if it+1 == x:
+            break
+    # print(results_after_combining)
+
+    for i, res_df in enumerate(results_after_combining):
+        res_df = res_df.reset_index(drop=True)
+        # print(i)
+        img = cv2.imread(images[i])
+        for j in range(len(res_df)):
+            # print(res_df)
+            xmin = round(res_df['xmin'][j])
+            ymin = round(res_df['ymin'][j])
+            xmax = round(res_df['xmax'][j])
+            ymax = round(res_df['ymax'][j])
+            # print(ymin, ymax, xmin, xmax)
+            license_plate = img[ymin:ymax, xmin:xmax]
+            img[ymin:ymax, xmin:xmax] = anonymize_license_plate_pixelate(license_plate, 10)  # change
+        cv2.imwrite(f"{output_path}/exp{results_dir_num}/output{i}.jpg", img)
+
+    end = time()
+    timer = end - start
+    print('czas:', timer, 'sekund')
